@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: coupon-demo
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/coupon_demo
+    username: postgres
+    password: #DB_PASSWORD
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+
