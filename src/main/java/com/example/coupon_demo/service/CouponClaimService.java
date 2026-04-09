@@ -40,6 +40,7 @@ public class CouponClaimService {
             return "CAMPAIGN_NOT_ACTIVE";
         }
         //檢查庫存有沒有被領光
+        //@但目前這版如果出現同時兩個user都發出請求，然後都成功，會造成有超發的情況發生
         if(campaign.getIssueCount()>= campaign.getTotalLimit()){
             return "SOLD_OUT";
         }
