@@ -23,7 +23,7 @@ public class CouponCampaign {
     @Column(nullable = false)
     private String status;
 
-    //@Version
+    @Version
     @Column(nullable = false)
     private Long version;
 
