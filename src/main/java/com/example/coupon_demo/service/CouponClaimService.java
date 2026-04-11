@@ -24,27 +24,20 @@ public class CouponClaimService {
 
     }
 
-    public String claim(Long campaignId, Long userID, String requestId){
+    public String claim(Long campaignId, Long userId, String requestId){
         //@先預設為3次，之後用JMeter看最佳結果
         int maxRetry=3;
 
         for(int RetryTime=1;RetryTime<=maxRetry;RetryTime++){
             try{
-                return doClaimOnce(campaignId,userID,requestId);
+                return doClaimOnce(campaignId,userId,requestId);
             }catch (ObjectOptimisticLockingFailureException e){
                 if(RetryTime==maxRetry){
-                    return "樂觀鎖衝突，已經自動重試3次，請重新整理";
-                }
-
-                try{
-                    Thread.sleep(RetryTime*50L);
-                }catch(InterruptedException e2){
-                    Thread.currentThread().interrupt();
-                    return "interrupt";
+                    return "CONFLICT_TRY_AGAIN1";
                 }
             }
         }
-        return "樂觀鎖衝突，請重試";
+        return "CONFLICT_TRY_AGAIN";
     }
 
 
@@ -52,23 +45,29 @@ public class CouponClaimService {
     public String doClaimOnce(Long campaignId,Long userId, String requestId){
         //看是否有重複的requestId
         if(userCouponRepository.findByRequestId(requestId).isPresent()){
-            return "重複請求";
+            return  "DUPLICATE_REQUEST";
         }
         //看同一個使用者在同一個活動是否處理過
         if(userCouponRepository.existsByCampaignIdAndUserId(campaignId,userId)){
-            return "同一個使用者和同個活動請求";
+            return "ALREADY_CLAIMED";
         }
         //用campaignId確認活動是不是存在
         CouponCampaign campaign =couponCampaignRepository.findById((campaignId))
                 //fail fast，直接讓系統停止。而不是繼續跑出更多錯
-                .orElseThrow(()-> new RuntimeException("找不到該活動"));
+                .orElseThrow(()-> new RuntimeException("CAMPAIGN_NOT_FOUND"));
+        try{
+            Thread.sleep(100);
+        }catch (InterruptedException e){
+            Thread.currentThread().interrupt();
+        }
+
         //檢查活動狀態是不是ACTIVE
         if(!"ACTIVE".equals(campaign.getStatus())){
-                return "活動不是ACTIVE";
+                return  "CAMPAIGN_NOT_ACTIVE";
         }
         //檢查庫存有沒有被領光
         if(campaign.getIssueCount()>=campaign.getTotalLimit()){
-            return "優惠券已經發完了";
+            return "SOLD_OUT";
         }
         //增加發行的數量並記錄
         campaign.setIssueCount(campaign.getIssueCount()+1);
