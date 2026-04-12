@@ -6,9 +6,12 @@ import com.example.coupon_demo.repository.CouponCampaignRepository;
 import com.example.coupon_demo.repository.UserCouponRepository;
 import com.sun.net.httpserver.Authenticator;
 import org.apache.catalina.User;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.redis.core.StringRedisTemplate;
+
 
 
 @Service
@@ -16,11 +19,13 @@ public class CouponClaimService {
 
     private final CouponCampaignRepository couponCampaignRepository;
     private final UserCouponRepository userCouponRepository;
+    private final StringRedisTemplate redisTemplate;
 
     public CouponClaimService(CouponCampaignRepository couponCampaignRepository,
-                                 UserCouponRepository userCouponRepository){
+                              UserCouponRepository userCouponRepository,StringRedisTemplate redisTemplate){
         this.couponCampaignRepository = couponCampaignRepository;
         this.userCouponRepository = userCouponRepository;
+        this.redisTemplate = redisTemplate;
 
     }
 
@@ -32,6 +37,7 @@ public class CouponClaimService {
             try{
                 return doClaimOnce(campaignId,userId,requestId);
             }catch (ObjectOptimisticLockingFailureException e){
+                Long stock =redisTemplate.opsForValue().increment("coupon_stock:"+campaignId);
                 if(RetryTime==maxRetry){
                     return "CONFLICT_TRY_AGAIN1";
                 }
@@ -43,6 +49,15 @@ public class CouponClaimService {
 
     @Transactional
     public String doClaimOnce(Long campaignId,Long userId, String requestId){
+        //@出現一個問題，如果redis成功，但是在DB失敗的話，會導致不一致
+        //@應該要把redis的扣除回滾或加回失敗的數量
+
+        //減去coupon_stock的數量，配合campaign_id
+        Long stock =redisTemplate.opsForValue().decrement("coupon_stock:"+campaignId);
+
+        if(stock==null||stock<0){
+            return "redis_SOLD_OUT";
+        }
         //看是否有重複的requestId
         if(userCouponRepository.findByRequestId(requestId).isPresent()){
             return  "DUPLICATE_REQUEST";
