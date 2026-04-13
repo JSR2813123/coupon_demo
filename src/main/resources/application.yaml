@@ -5,7 +5,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/coupon_demo
     username: postgres
-    password: #DB_PASSWORD
+    password: 2411367 #DB_PASSWORD
     driver-class-name: org.postgresql.Driver
 
   jpa:

@@ -11,6 +11,8 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import java.util.Collections;
 
 
 
@@ -20,7 +22,18 @@ public class CouponClaimService {
     private final CouponCampaignRepository couponCampaignRepository;
     private final UserCouponRepository userCouponRepository;
     private final StringRedisTemplate redisTemplate;
+    private static final DefaultRedisScript<Long> DECR_IF_AVAILABLE_SCRIPT;
 
+    static {
+        DECR_IF_AVAILABLE_SCRIPT =new DefaultRedisScript<>();
+        DECR_IF_AVAILABLE_SCRIPT.setScriptText(
+                "local stock = tonumber(redis.call('GET',KEYS[1])) "+
+                        "if not stock then return -2 end "+
+                        "if stock <= 0 then return -1 end "+
+                        "return redis.call('DECR',KEYS[1]) "
+        );
+        DECR_IF_AVAILABLE_SCRIPT.setResultType(Long.class);
+    }
     public CouponClaimService(CouponCampaignRepository couponCampaignRepository,
                               UserCouponRepository userCouponRepository,StringRedisTemplate redisTemplate){
         this.couponCampaignRepository = couponCampaignRepository;
@@ -30,17 +43,53 @@ public class CouponClaimService {
     }
 
     public String claim(Long campaignId, Long userId, String requestId){
+        String redisKey = "coupon_stock:"+campaignId;
+
+        Long stock = redisTemplate.execute(
+                DECR_IF_AVAILABLE_SCRIPT,
+                Collections.singletonList(redisKey)
+        );
+        if(stock == null){
+            return "REDIS_ERROR";
+        }
+        if(stock == -2L){
+            return "REDIS_KEY_NOT_FOUND";
+        }
+        if(stock == -1L){
+            return "REDIS_SOLD_OUT";
+        }
+
+
         //@先預設為3次，之後用JMeter看最佳結果
         int maxRetry=3;
 
-        for(int RetryTime=1;RetryTime<=maxRetry;RetryTime++){
+        for(int retryTime=1;retryTime<=maxRetry;retryTime++){
             try{
-                return doClaimOnce(campaignId,userId,requestId);
-            }catch (ObjectOptimisticLockingFailureException e){
-                Long stock =redisTemplate.opsForValue().increment("coupon_stock:"+campaignId);
-                if(RetryTime==maxRetry){
-                    return "CONFLICT_TRY_AGAIN1";
+                String result = doClaimOnce(campaignId,userId,requestId);
+                //非成功情況的redis_key數量補償
+                if(!"SUCCESS".equals(result)){
+                    redisTemplate.opsForValue().increment(redisKey);
                 }
+
+                return result;
+
+            }catch (ObjectOptimisticLockingFailureException e){
+                if(retryTime==maxRetry){
+                    //衝突的redis_key數量補償
+                    redisTemplate.opsForValue().increment(redisKey);
+                    return "CONFLICT_TRY_AGAIN";
+                }
+
+                try{
+                    Thread.sleep(retryTime*50L);//
+                }catch(InterruptedException e2){
+                    Thread.currentThread().interrupt();
+                    redisTemplate.opsForValue().increment(redisKey);
+                    return "INTERRUPTED";
+                }
+            }catch(RuntimeException e){
+                redisTemplate.opsForValue().increment(redisKey);
+                throw e;
             }
         }
         return "CONFLICT_TRY_AGAIN";
@@ -49,15 +98,8 @@ public class CouponClaimService {
 
     @Transactional
     public String doClaimOnce(Long campaignId,Long userId, String requestId){
-        //@出現一個問題，如果redis成功，但是在DB失敗的話，會導致不一致
-        //@應該要把redis的扣除回滾或加回失敗的數量
+        //不處理redis的部分，只保留核心帳務邏輯，避免後續除錯或邏輯判斷過於複雜
 
-        //減去coupon_stock的數量，配合campaign_id
-        Long stock =redisTemplate.opsForValue().decrement("coupon_stock:"+campaignId);
-
-        if(stock==null||stock<0){
-            return "redis_SOLD_OUT";
-        }
         //看是否有重複的requestId
         if(userCouponRepository.findByRequestId(requestId).isPresent()){
             return  "DUPLICATE_REQUEST";
