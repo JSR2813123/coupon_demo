@@ -53,10 +53,10 @@ public class CouponClaimService {
             return "REDIS_ERROR";
         }
         if(stock == -2L){
-            return "REDIS_KEY_NOT_FOUND";
+            return "REDIS_ERROR";  //為redis_key_not_found
         }
         if(stock == -1L){
-            return "REDIS_SOLD_OUT";
+            return "Redis_SOLD_OUT";
         }
 
 
@@ -92,6 +92,7 @@ public class CouponClaimService {
                 throw e;
             }
         }
+        //redisTemplate.opsForValue().increment(redisKey);
         return "CONFLICT_TRY_AGAIN";
     }
 
@@ -112,11 +113,6 @@ public class CouponClaimService {
         CouponCampaign campaign =couponCampaignRepository.findById((campaignId))
                 //fail fast，直接讓系統停止。而不是繼續跑出更多錯
                 .orElseThrow(()-> new RuntimeException("CAMPAIGN_NOT_FOUND"));
-        try{
-            Thread.sleep(100);
-        }catch (InterruptedException e){
-            Thread.currentThread().interrupt();
-        }
 
         //檢查活動狀態是不是ACTIVE
         if(!"ACTIVE".equals(campaign.getStatus())){

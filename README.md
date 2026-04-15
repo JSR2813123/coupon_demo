@@ -126,10 +126,34 @@ coupon_campaign
     version
     create_at
 
-note
-目前為基礎版本，尚未處理高併發問題（可能發生超發）。
+已完成功能
+PostgreSQL 持久化
+防重複請求（requestId）
+防重複領取（campaignId + userId）
+JPA 樂觀鎖
+retry（最多 3 次）
+Redis 庫存閘門
+Redis Lua 原子扣減
 
-Next Step
-    Optimistic Lock（樂觀鎖）
-    Redis 限流
-    高併發處理
+流程概述
+先透過 Redis Lua script 判斷是否還有庫存，只有 stock > 0 才扣減
+扣減成功後才進入 DB 流程
+DB 端再檢查重複請求 / 重複領取 / 活動狀態
+使用樂觀鎖避免多個請求同時成功更新同一筆活動資料
+若 DB 最終失敗，補回 Redis 庫存
+
+
+測試方式
+Docker 啟動 Redis
+PowerShell 併發請求
+後續可用 JMeter 壓測
+
+已知限制
+retry 與 transaction 結構仍可再重構
+結果碼仍是字串，後續可改 enum
+尚未做完整監控與指標統計
+
+
+
+
+
