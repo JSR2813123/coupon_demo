@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import java.util.Collections;
+import java.util.concurrent.ThreadLocalRandom;
 
 
 
@@ -81,7 +82,14 @@ public class CouponClaimService {
                 }
 
                 try{
-                    Thread.sleep(retryTime*50L);//
+                    long baseDelay = 30L;
+                    long stepDelay = 40L;
+                    long jitter = ThreadLocalRandom.current().nextLong(0, 31); // 0~30 ms
+                    long sleepMillis = baseDelay + retryTime * stepDelay + jitter;
+
+                    Thread.sleep(sleepMillis);
+                    //原本用的線性，容易導致再次同步衝突
+                    //Thread.sleep(retryTime*50L);
                 }catch(InterruptedException e2){
                     Thread.currentThread().interrupt();
                     redisTemplate.opsForValue().increment(redisKey);
