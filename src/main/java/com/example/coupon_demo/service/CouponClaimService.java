@@ -61,7 +61,7 @@ public class CouponClaimService {
         }
 
 
-        //@先預設為3次，之後用JMeter看最佳結果
+        //@先預設為3次，之後用JMeter做測試結果，調參數後看最佳結果
         int maxRetry=3;
 
         for(int retryTime=1;retryTime<=maxRetry;retryTime++){
