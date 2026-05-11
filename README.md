@@ -85,8 +85,22 @@ Redis Lua 原子扣減
 DB 端再檢查重複請求 / 重複領取 / 活動狀態
 使用樂觀鎖避免多個請求同時成功更新同一筆活動資料
 若 DB 最終失敗，補回 Redis 庫存
-增加不同retry的thread.sleep時間的併發導致失敗實驗比較(word,excel)
-實驗結論為用Thread.sleep(retryTime*50L)會比baseDelay + retryTime * stepDelay + jitter的併發數多約30%，且在併發樣本高才顯現，而jitter方式的latency可能高於純粹線性的thread.sleep，但亦可能為jitter本身的baseDelay和stepDelay設定變數就比thread.sleep()高導致。
+
+增加不同retry的thread.sleep時間的併發導致失敗實驗比較(詳細說明都在word,實驗數據都在excel)
+實驗結論為用Thread.sleep(retryTime*50L)會比baseDelay + retryTime * stepDelay + jitter的併發數多約40%，且在併發樣本高才顯現，而jitter方式的latency可能高於純粹線性的thread.sleep，但亦可能為jitter本身的baseDelay和stepDelay設定變數就比thread.sleep()高導致，故可透過針對不同Request預期數量適當調整參數降低latency。
+
+樂觀鎖_測試不同量級請求的效能比較(詳細說明都在word,實驗數據都在excel)
+實驗結論為在不同的量級請求下的conflict的比例平均都在6%~7%，Redis阻擋超發流量的平均值大約分布在92~98%，會有92%這種較低的原因的特徵都有出現Error rate不為0的情況，而在result.jtl(JMeter原始資料)出現HttpHostConnectException: Connection refused，狀態碼為NOT_FOUND，推測可能原因有三個，第一個原因為Spring boot在測試中直接崩潰，第二個原因為Tomcat(我用預設值200)、thread pool 承受不了瞬間連線，第三個原因為JMeter 2000 threads 瞬間打 localhost，超過本機可承受能力。
+
+由此衍生後續研究
+1.不同Rame-up情況下的服務連接情況
+2.不同backoff+jitter參數的latency、conflict比較
+3.悲觀鎖和樂觀鎖的latency和success比較
+
+不同Rame-up情況下的服務連接情況(詳細說明都在word,實驗數據都在excel)
+實驗結論為
+
+
 
 測試方式
 Docker 啟動 Redis
