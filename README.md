@@ -98,17 +98,17 @@ DB 端再檢查重複請求 / 重複領取 / 活動狀態
 3.悲觀鎖和樂觀鎖的latency和success比較
 
 不同Rame-up情況下的服務連接情況(詳細說明都在word,實驗數據都在excel)
-實驗結論為
+實驗結論為越高的request會導致Error-rate更高，而在相同request不同Ramp-up的層面，request2000是符合越高Ramp-up可以降低Error-rate的推論，但request4000則在0.5秒和1秒的部分沒有符合這個推論，推測可能是因為request數量過高，導致對於Tomcat或Thread pool都無法承受，不論是0.5秒或1秒的Ramp-up都相差無幾。
 
 
 
-不同backoff+jitter參數的latency、conflict比較
+不同backoff+jitter參數的latency、conflict比較(詳細說明都在word,實驗數據都在excel)
+實驗結論為backoff+jitter的conflict/request比例為3.2%，exponential backoff的conflict/request的比例為5.4%，exponential backoff+jitter的conflict/request的比例為0.2%，且exponential backoff+jitter不只是碰撞少，他的latency平均中位數和PR99也都是三個當中最低的，我認為原因是因為這個方法擁有的jitter的空間理論上最大，可以最大程度避免碰撞，並且減少耗時。
 
 
 
 
-
-樂觀鎖vs悲觀鎖_latency和success比較
+樂觀鎖vs悲觀鎖_latency和success比較(詳細說明都在word,實驗數據都在excel)
 
 
 
