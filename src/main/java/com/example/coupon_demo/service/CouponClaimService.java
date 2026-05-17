@@ -83,13 +83,15 @@ public class CouponClaimService {
 
                 try{
                     long baseDelay = 30L;
-                    long stepDelay = 40L;
-                    long jitter = ThreadLocalRandom.current().nextLong(0, 31); // 0~30 ms
-                    long sleepMillis = baseDelay + retryTime * stepDelay + jitter;
+                    //long stepDelay = 40L;
+                    //long jitter = ThreadLocalRandom.current().nextLong(0, 31); // 0~30 ms
+                    long sleepMillis = (long) (Math.random()*(baseDelay*Math.pow(2,retryTime)));
+
 
                     Thread.sleep(sleepMillis);
-                    //原本用的線性，容易導致再次同步衝突
-                    //Thread.sleep(retryTime*50L);
+
+                    //long sleepMillis =baseDelay+stepDelay*retryTime+jitter;
+                    //long sleepMillis = (long) (Math.random()*(baseDelay*Math.pow(2,retryTime)));
                 }catch(InterruptedException e2){
                     Thread.currentThread().interrupt();
                     redisTemplate.opsForValue().increment(redisKey);
