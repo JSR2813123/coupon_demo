@@ -4,21 +4,16 @@ import com.example.coupon_demo.entity.CouponCampaign;
 import com.example.coupon_demo.entity.UserCoupon;
 import com.example.coupon_demo.repository.CouponCampaignRepository;
 import com.example.coupon_demo.repository.UserCouponRepository;
-import com.sun.net.httpserver.Authenticator;
-import org.apache.catalina.User;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import java.util.Collections;
-import java.util.concurrent.ThreadLocalRandom;
-
 
 
 @Service
-public class CouponClaimService {
+public class CouponClaimOptimisticService {
 
     private final CouponCampaignRepository couponCampaignRepository;
     private final UserCouponRepository userCouponRepository;
@@ -35,8 +30,8 @@ public class CouponClaimService {
         );
         DECR_IF_AVAILABLE_SCRIPT.setResultType(Long.class);
     }
-    public CouponClaimService(CouponCampaignRepository couponCampaignRepository,
-                              UserCouponRepository userCouponRepository,StringRedisTemplate redisTemplate){
+    public CouponClaimOptimisticService(CouponCampaignRepository couponCampaignRepository,
+                                        UserCouponRepository userCouponRepository, StringRedisTemplate redisTemplate){
         this.couponCampaignRepository = couponCampaignRepository;
         this.userCouponRepository = userCouponRepository;
         this.redisTemplate = redisTemplate;
@@ -102,7 +97,7 @@ public class CouponClaimService {
                 throw e;
             }
         }
-        //redisTemplate.opsForValue().increment(redisKey);
+
         return "CONFLICT_TRY_AGAIN";
     }
 
