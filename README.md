@@ -80,7 +80,7 @@ Redis 庫存閘門
 Redis Lua 原子扣減
 
 流程概述
-先透過 Redis Lua script 判斷是否還有庫存，只有 stock > 0 才扣減
+先透過 Redis Lua script (保證其原子性) 判斷是否還有庫存，只有 stock > 0 才扣減
 扣減成功後才進入 DB 流程
 DB 端再檢查重複請求 / 重複領取 / 活動狀態
 使用樂觀鎖避免多個請求同時成功更新同一筆活動資料
@@ -109,6 +109,7 @@ DB 端再檢查重複請求 / 重複領取 / 活動狀態
 
 樂觀鎖vs悲觀鎖_latency和success比較(詳細說明都在word,實驗數據都在excel)
 實驗結論
+
 
 
 
