@@ -2,6 +2,9 @@
 
 一個簡單的優惠券領取系統，用來模擬高併發場景下的發券邏輯。
 
+# System Architecture
+
+![architecture](docs/architecture.png)
 ---
 
 ## 🚀 Tech Stack
@@ -113,7 +116,13 @@ DB 端再檢查重複請求 / 重複領取 / 活動狀態
 
 
 
+隔離層級比較和理解(詳細說明都在word)
+
+
+
+
 悲觀鎖timeout-deadlock實驗
+
 
 
 
