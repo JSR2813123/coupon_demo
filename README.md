@@ -79,13 +79,15 @@ Request flow:
 | create_at | 建立時間 |
 
 - user_coupon
-- Column	                        Description
-- id	                             領券紀錄 ID
-- campaign_id	                  對應 coupon_campaign的id
-- user_id	                           使用者ID
-- request_id	                 request的唯一識別(Idempotency)
-- status	                           領取狀態
-- create_at	                         建立時間
+
+| Column | Description |
+|----------|----------|
+| id | 領券紀錄 ID |
+| campaign_id | 對應 coupon_campaign |
+| user_id | 使用者 ID |
+| request_id | request 唯一識別(Idempotency) |
+| status | 領取狀態 |
+| create_at | 建立時間 |
 
 # 6. Claim Flow
 
