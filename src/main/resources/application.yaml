@@ -5,8 +5,12 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/coupon_demo
     username: postgres
-    password: 2411367 #DB_PASSWORD
+    password: ${DB_PASSWORD} #DB_PASSWORD
     driver-class-name: org.postgresql.Driver
+    hikari: # DB Connection Pool
+      maximum-pool-size: 10 #預設10
+      minimum-idle: 5 #預設10
+      connection-timeout: 30000 #預設30000
 
   jpa:
     hibernate:
@@ -17,3 +21,20 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+
+server:
+  port: 8080
+  tomcat:
+    threads:
+      max: 100   #預設100
+      min-spare: 10   #預設10
+    accept-count: 100   #預設100    等待區
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+
