@@ -96,13 +96,6 @@ public class CouponClaimPessimisticService {
                 //fail fast，直接讓系統停止。而不是繼續跑出更多錯
                 .orElseThrow(()-> new RuntimeException("CAMPAIGN_NOT_FOUND"));
 
-        //增加latency，方便截圖
-        try {
-            Thread.sleep(20);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
         //檢查活動狀態是不是ACTIVE
         if(!"ACTIVE".equals(campaign.getStatus())){
             return  "CAMPAIGN_NOT_ACTIVE";
