@@ -1,0 +1,78 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: coupon-postgres
+    environment:
+      POSTGRES_DB: coupon_demo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d coupon_demo"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: coupon-redis
+    ports:
+      - "6380:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    container_name: coupon-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_JSON: >
+        {
+          "spring": {
+            "datasource": {
+              "url": "jdbc:postgresql://postgres:5432/coupon_demo",
+              "username": "postgres",
+              "password": "postgres",
+              "driver-class-name": "org.postgresql.Driver"
+            },
+            "jpa": {
+              "hibernate": {
+                "ddl-auto": "update"
+              },
+              "show-sql": false,
+              "database-platform": "org.hibernate.dialect.PostgreSQLDialect",
+              "properties": {
+                "hibernate": {
+                  "dialect": "org.hibernate.dialect.PostgreSQLDialect"
+                }
+              }
+            },
+            "data": {
+              "redis": {
+                "host": "redis",
+                "port": 6379
+              }
+            }
+          }
+        }
+      JAVA_OPTS: "-Xms256m -Xmx512m"
+    ports:
+      - "8081:8080"
+
+volumes:
+  postgres-data:
+  redis-data:
